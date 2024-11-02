@@ -1,0 +1,100 @@
+{% extends 'base.html' %}
+{% block title %}Search{% endblock %}
+{% block content %}
+<h1>Search Products</h1>
+<form method="POST">
+    <input type="text" name="query" placeholder="Search by name" required>
+    <input type="submit" value="Search">
+</form>
+<div class="product-container">
+    {% for product in products %}
+    <div class="product">
+        <img src="{{ url_for('static', filename='uploads/' + product.image_file) }}" alt="{{ product.name }}" class="product-image">
+        <h2>{{ product.name }}</h2>
+        <p>{{ product.description }}</p>
+        <p>Price: ${{ product.price }}</p>
+        <a href="{{ url_for('product', product_id=product.id) }}" class="btn">View Details</a>
+    </div>
+    {% endfor %}
+</div>
+
+<style>
+    /* General styling for the search page */
+h1 {
+    text-align: center;
+    margin-bottom: 20px;
+    font-size: 2.5em;
+}
+
+form {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 30px;
+}
+
+input[type="text"] {
+    padding: 10px;
+    width: 300px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 16px;
+}
+
+input[type="submit"] {
+    padding: 10px 20px;
+    background-color: #28a745;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+    margin-left: 10px;
+    transition: background-color 0.3s;
+}
+
+input[type="submit"]:hover {
+    background-color: #218838; /* Darker green on hover */
+}
+
+/* Product container styling */
+.product-container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-around;
+}
+
+/* Individual product styling */
+.product {
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    padding: 15px;
+    margin: 15px;
+    text-align: center;
+    width: 300px; /* Fixed width for product cards */
+    transition: box-shadow 0.3s;
+}
+
+.product:hover {
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1); /* Shadow effect on hover */
+}
+
+.product-image {
+    max-width: 100%; /* Responsive image */
+    height: auto; /* Maintain aspect ratio */
+    border-radius: 5px; /* Rounded corners for images */
+}
+
+/* Product name and price styling */
+.product h2 {
+    font-size: 1.5em;
+    margin: 10px 0;
+}
+
+.product p {
+    font-size: 1.2em;
+    margin: 5px 0;
+}
+
+
+</style>
+{% endblock %}

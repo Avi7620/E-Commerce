@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+
+{% block content %}
+    <h1>Your Cart</h1>
+    {% if cart_items %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Product Name</th>
+                    <th>Quantity</th>
+                    <th>Price</th>
+                    <th>Subtotal</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in cart_items %}
+                <tr>
+                    <td>{{ item.product.name }}</td>
+                    <td>{{ item.quantity }}</td>
+                    <td>${{ item.product.price }}</td>
+                    <td>${{ item.product.price * item.quantity }}</td>
+                    <td>
+                        <form action="{{ url_for('delete_cart_item', item_id=item.id) }}" method="POST">
+                            <button type="submit">Remove</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <h3>Total: ${{ total }}</h3>  <!-- Use the total variable here -->
+    {% else %}
+        <p>Your cart is empty.</p>
+    {% endif %}
+    <a href="{{ url_for('home') }}">Continue Shopping</a>
+
+    <style>
+        
+    </style>
+{% endblock %}
