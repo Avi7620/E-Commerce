@@ -3,6 +3,17 @@
 {% block title %}Add Product{% endblock %}
 
 {% block content %}
+
+    {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            <ul class="flashes">
+            {% for message in messages %}
+                <li>{{ message }}</li>
+            {% endfor %}
+            </ul>
+        {% endif %}
+    {% endwith %}
+
     <div class="container1">
         <h1>Add Product</h1>
         <form action="{{ url_for('add_product') }}" method="POST" enctype="multipart/form-data" class="product-form">
@@ -99,6 +110,22 @@
 
         .back-link:hover {
             text-decoration: underline;
+        }
+
+        /* Style for flash messages */
+        .flashes {
+            list-style-type: none;
+            padding: 0;
+            margin-bottom: 15px;
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+            border-radius: 4px;
+            padding: 10px;
+        }
+
+        .flashes li {
+            margin: 0;
         }
     </style>
 {% endblock %}
