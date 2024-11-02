@@ -2,32 +2,16 @@ from flask import Flask, render_template, redirect, url_for, request, flash, ses
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
+from mega import Mega  # Import the Mega SDK
 import os
-from google.oauth2.credentials import Credentials
-from google_auth_oauthlib.flow import InstalledAppFlow
-from googleapiclient.discovery import build
-from googleapiclient.http import MediaFileUpload
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your_secret_key'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///db12.db'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
-
-# Google Drive API Setup
-SCOPES = ['https://www.googleapis.com/auth/drive.file']
-creds = None
-
-def authenticate_gdrive():
-    global creds
-    if os.path.exists('token.json'):
-        creds = Credentials.from_authorized_user_file('token.json', SCOPES)
-    else:
-        flow = InstalledAppFlow.from_client_secrets_file('credentials.json', SCOPES)
-        creds = flow.run_local_server(port=0)
-        with open('token.json', 'w') as token:
-            token.write(creds.to_json())
 
 class User(db.Model, UserMixin):
     __tablename__ = 'users'
@@ -37,6 +21,7 @@ class User(db.Model, UserMixin):
     is_admin = db.Column(db.Boolean, default=False)
 
 class Product(db.Model):
+    __tablename__ = 'products'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
     category = db.Column(db.String(50), nullable=False)
@@ -45,6 +30,16 @@ class Product(db.Model):
     image_file = db.Column(db.String(120), nullable=False)
     admin_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     admin = db.relationship('User', backref='products')
+
+class CartItem(db.Model):
+    __tablename__ = 'cart_items'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    product_id = db.Column(db.Integer, db.ForeignKey('products.id'), nullable=False)
+    quantity = db.Column(db.Integer, nullable=False, default=1)
+
+    user = db.relationship('User', backref='cart_items')
+    product = db.relationship('Product', backref='cart_items')
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -106,32 +101,40 @@ def add_product():
         product_image = request.files['image']
 
         if product_image:
+            # Save the image temporarily
+            temp_image_path = os.path.join('temp', product_image.filename)
+            product_image.save(temp_image_path)
+
             try:
-                authenticate_gdrive()
-                drive_service = build('drive', 'v3', credentials=creds)
+                # Login to Mega
+                email = 'jadhavavi7620@gmail.com'  # Replace with your email
+                password = 'Avi@1234'  # Replace with your password
+                mega = Mega()
+                m = mega.login(email=email, password=password)
 
-                file_metadata = {
-                    'name': product_image.filename,
-                    'mimeType': product_image.content_type
-                }
-                media = MediaFileUpload(product_image, mimetype=product_image.content_type)
-                file = drive_service.files().create(body=file_metadata, media_body=media, fields='id').execute()
-                image_file_id = file.get('id')
+                # Upload the file
+                m.upload(temp_image_path)
 
+                # Here, you would need to get the uploaded file's link
+                # (You can store the link to the database or wherever needed)
+
+                # Remove the temporary file
+                os.remove(temp_image_path)
+
+                # Add product to the database
                 new_product = Product(
                     name=product_name,
                     category=product_category,
                     description=product_description,
-                    price=product_price,
-                    image_file=image_file_id,
+                    price=float(product_price),
+                    image_file=product_image.filename,  # You can store the image file name or URL
                     admin_id=current_user.id
                 )
-
                 db.session.add(new_product)
                 db.session.commit()
+
                 flash('Product added successfully!')
                 return redirect(url_for('admin_dashboard'))
-
             except Exception as e:
                 flash(f'An error occurred while uploading the image: {e}')
         else:
@@ -213,10 +216,10 @@ def delete_cart_item(item_id):
         db.session.commit()
         flash('Item removed from cart.')
     else:
-        flash('You cannot remove this item.')
+        flash('You do not have permission to delete this item.')
     return redirect(url_for('cart'))
 
 if __name__ == '__main__':
     with app.app_context():
-        db.create_all()  # Initializes the database tables within application context
+        db.create_all()  # Create database tables if they don't exist
     app.run(debug=True)
